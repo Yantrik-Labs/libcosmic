@@ -150,6 +150,11 @@ pub mod font;
 #[doc(inline)]
 pub use iced;
 
+/// Re-exported for embedded automation drivers: `iced_winit::inject_window_event`
+/// feeds synthetic input into the running shell (see the `yantra-patch` branch).
+#[cfg(feature = "winit")]
+pub use iced_winit;
+
 pub mod icon_theme;
 pub mod keyboard_nav;
 
