@@ -150,10 +150,17 @@ pub mod font;
 #[doc(inline)]
 pub use iced;
 
-/// Re-exported for embedded automation drivers: `iced_winit::inject_window_event`
-/// feeds synthetic input into the running shell (see the `dev` branch).
+/// Feeds a synthetic window event into the running application shell, as if it
+/// came from the compositor. Intended for embedded automation drivers.
+#[doc(inline)]
 #[cfg(feature = "winit")]
-pub use iced_winit;
+pub use iced_winit::inject_window_event;
+
+/// The `winit` windowing types ([`winit::event`], [`winit::keyboard`],
+/// [`winit::dpi`], ...) needed to construct events for [`inject_window_event`].
+#[doc(inline)]
+#[cfg(feature = "winit")]
+pub use iced_winit::winit;
 
 pub mod icon_theme;
 pub mod keyboard_nav;
