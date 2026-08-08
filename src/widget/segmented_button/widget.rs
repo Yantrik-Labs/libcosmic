@@ -1929,6 +1929,35 @@ where
         operation.focusable(Some(&self.id.0), layout.bounds(), state);
         operation.custom(Some(&self.id.0), layout.bounds(), state);
 
+        // Publish each item separately, so a nav bar, a tab bar and a
+        // segmented control are addressable one entry at a time rather than as
+        // a single anonymous rectangle. An assistive client — or an automation
+        // one reading the same tree — otherwise sees one focusable covering the
+        // whole strip and cannot name, or reach, any entry within it.
+        //
+        // Each entry is emitted as a focusable carrying its own bounds,
+        // followed by its label as a text child, which is the shape an ordinary
+        // button already produces and which existing consumers name by the same
+        // rule.
+        let items: Vec<(Rectangle, Option<String>)> = self
+            .variant_bounds(state, layout.bounds())
+            .filter_map(|item| match item {
+                ItemBounds::Button(entity, bounds) => Some((
+                    bounds,
+                    self.model.text(entity).map(String::from),
+                )),
+                ItemBounds::Divider(_, _) => None,
+            })
+            .collect();
+        for (bounds, label) in items {
+            operation.focusable(None, bounds, state);
+            if let Some(said) = label {
+                operation.traverse(&mut |operation| {
+                    operation.text(None, bounds, &said);
+                });
+            }
+        }
+
         if let Item::Set = state.focused_item {
             if self.prev_tab_sensitive(state) {
                 state.focused_item = Item::PrevButton;
