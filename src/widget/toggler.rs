@@ -225,6 +225,32 @@ impl<'a, Message> Widget<Message, crate::Theme, crate::Renderer> for Toggler<'a,
         res
     }
 
+    fn operate(
+        &mut self,
+        tree: &mut Tree,
+        layout: Layout<'_>,
+        _renderer: &crate::Renderer,
+        operation: &mut dyn widget::Operation<()>,
+    ) {
+        let state = tree.state.downcast_mut::<State>();
+        operation.focusable(Some(&self.id), layout.bounds(), state);
+
+        // The label is drawn by the toggler itself rather than by a child
+        // widget, so it is published here as a text child of the focusable.
+        // Without it the toggler is an anonymous rectangle to anything reading
+        // the widget tree, which is the shape a button already produces.
+        if let Some(label) = self.label.as_deref() {
+            let label_bounds = layout
+                .children()
+                .next()
+                .map_or_else(|| layout.bounds(), |label_layout| label_layout.bounds());
+
+            operation.traverse(&mut |operation| {
+                operation.text(None, label_bounds, label);
+            });
+        }
+    }
+
     fn update(
         &mut self,
         tree: &mut Tree,
@@ -442,4 +468,19 @@ pub struct State {
     text: widget::text::State<<crate::Renderer as iced_core::text::Renderer>::Paragraph>,
     anim: anim::State,
     prev_toggled: bool,
+    is_focused: bool,
+}
+
+impl widget::operation::Focusable for State {
+    fn is_focused(&self) -> bool {
+        self.is_focused
+    }
+
+    fn focus(&mut self) {
+        self.is_focused = true;
+    }
+
+    fn unfocus(&mut self) {
+        self.is_focused = false;
+    }
 }

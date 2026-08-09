@@ -562,6 +562,47 @@ where
         )
     }
 
+    fn operate(
+        &mut self,
+        tree: &mut Tree,
+        layout: Layout<'_>,
+        renderer: &Renderer,
+        operation: &mut dyn iced_widget::core::widget::Operation<()>,
+    ) {
+        operation.container(None, layout.bounds());
+
+        // Publish each menu root separately, rather than the bar as a single
+        // rectangle. A bar published as one box can be found but not entered:
+        // an assistive client — or an automation one reading the same tree —
+        // sees one target covering every menu and cannot name, or reach, any
+        // root within it.
+        //
+        // Each root operates itself at its own bounds, which for the
+        // `menu_root` builder is a button, and so yields a focusable carrying
+        // that root's bounds with its label emitted as a text child — the shape
+        // an ordinary button already produces.
+        //
+        // Only the roots exist here. The items of a menu are built when it
+        // opens, by the overlay or, on Wayland, by the popup surface, and are
+        // operated there rather than from the bar.
+        for ((root, root_tree), root_layout) in self
+            .menu_roots
+            .iter_mut()
+            .zip(tree.children.iter_mut())
+            .zip(layout.children())
+        {
+            let index = root.index;
+            operation.traverse(&mut |operation| {
+                root.item.operate(
+                    &mut root_tree.children[index],
+                    root_layout,
+                    renderer,
+                    operation,
+                );
+            });
+        }
+    }
+
     #[allow(clippy::too_many_lines)]
     fn update(
         &mut self,
